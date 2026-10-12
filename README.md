@@ -1,8 +1,6 @@
 # Chess Post-Game Analyzer
 
-This is a fair-play chess analysis tool for completed games. It reads a PGN, replays the match, searches each position with a built-in alpha-beta engine, and reports moves where the player could have chosen a stronger move.
-
-It does not connect to live games, scrape boards, or provide real-time help.
+A command-line chess analysis tool for completed games. It reads a PGN, replays the match, searches each position with a built-in alpha-beta engine, and reports moves where the player could have chosen a stronger move.
 
 ## Quick Start
 
@@ -48,7 +46,7 @@ Example output line:
 
 - No third-party dependencies.
 - Supports normal PGN SAN, castling, promotion, en passant, comments, tags, and simple UCI move tokens.
-- Uses legal move generation plus alpha-beta search.
+- Uses legal move generation plus alpha-beta search. Only fully searched, exact evaluations enter the cache; cutoff bounds are discarded. Mate scores include distance from the root, and stalemate scores zero even at the search limit.
 - Default depth is intentionally small so full games finish quickly in pure Python.
 
 ## Tests
@@ -56,5 +54,7 @@ Example output line:
 ```sh
 python3 -m unittest -v
 ```
+
+Nine regression tests cover move parsing, special moves, mate detection, stalemate, and cache reuse after a narrow search.
 
 Requires Python 3.10 or newer. Evaluations come from the built-in engine, not Stockfish, and should be treated as approximate. The parser reads a single game per input.

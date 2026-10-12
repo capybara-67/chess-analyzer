@@ -585,7 +585,7 @@ class Board:
 
 class Engine:
     def __init__(self) -> None:
-        self.table: dict[tuple[tuple[str | None, ...], str, str, int | None, int], int] = {}
+        self.table: dict[tuple[tuple[str | None, ...], str, str, int | None, int, int], int] = {}
 
     def root_scores(self, board: Board, depth: int) -> list[tuple[Move, int]]:
         moves = board.legal_moves()
@@ -600,11 +600,11 @@ class Engine:
 
     def search(self, board: Board, depth: int, alpha: int, beta: int, ply: int) -> int:
         if depth == 0:
-            if board.in_check(board.turn) and not board.has_legal_moves():
-                return -MATE_SCORE + ply
+            if not board.has_legal_moves():
+                return -MATE_SCORE + ply if board.in_check(board.turn) else 0
             return self.static_eval(board)
 
-        key = (*board.fen_key(), depth)
+        key = (*board.fen_key(), depth, ply)
         if key in self.table:
             return self.table[key]
 
@@ -614,6 +614,8 @@ class Engine:
                 return -MATE_SCORE + ply
             return 0
 
+        original_alpha = alpha
+        fully_searched = True
         value = -INF
         ordered = sorted(moves, key=lambda move: self._move_order_score(board, move), reverse=True)
         for move in ordered:
@@ -623,9 +625,12 @@ class Engine:
             value = max(value, score)
             alpha = max(alpha, score)
             if alpha >= beta:
+                fully_searched = False
                 break
 
-        self.table[key] = value
+        # A cutoff gives a bound, not an exact score. Cache only exact results.
+        if fully_searched and value > original_alpha:
+            self.table[key] = value
         return value
 
     def static_eval(self, board: Board) -> int:

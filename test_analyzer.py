@@ -1,6 +1,6 @@
 import unittest
 
-from analyzer import Board, analyze_game, parse_pgn, parse_square
+from analyzer import Board, Engine, INF, MATE_SCORE, analyze_game, parse_pgn, parse_square
 
 
 class AnalyzerTests(unittest.TestCase):
@@ -27,6 +27,24 @@ class AnalyzerTests(unittest.TestCase):
         g4 = next(item for item in items if item.played_uci == "g2g4")
         self.assertEqual(g4.classification, "blunder")
         self.assertGreater(g4.loss, 200)
+
+    def test_stalemate_is_draw_at_search_horizon(self):
+        board = Board.from_fen("k7/8/1QK5/8/8/8/8/8 b - - 0 1")
+        self.assertEqual(Engine().search(board, 0, -INF, INF, 0), 0)
+
+    def test_narrow_search_does_not_poison_full_search(self):
+        board = Board.from_fen("7k/8/8/8/8/8/6q1/KR6 w - - 0 1")
+        engine = Engine()
+        engine.search(board, 2, -INF, -10000, 0)
+        reused = engine.search(board, 2, -INF, INF, 0)
+        fresh = Engine().search(board, 2, -INF, INF, 0)
+        self.assertEqual(reused, fresh)
+
+    def test_mate_score_respects_distance_from_root(self):
+        board = Board.from_fen("7k/8/5KQ1/8/8/8/8/8 w - - 0 1")
+        engine = Engine()
+        self.assertEqual(engine.search(board, 2, -INF, INF, 1), MATE_SCORE - 2)
+        self.assertEqual(engine.search(board, 2, -INF, INF, 5), MATE_SCORE - 6)
 
     def test_square_parser(self):
         self.assertEqual(parse_square("a1"), 0)
